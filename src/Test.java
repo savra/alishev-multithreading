@@ -1,72 +1,47 @@
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
+import java.util.concurrent.*;
 
 public class Test {
+    private static final BlockingQueue<Integer> blockingQueue = new ArrayBlockingQueue<>(10);
+
     public static void main(String[] args) throws InterruptedException {
-        Worker worker = new Worker();
-        worker.main();
-    }
-}
 
-class Worker {
-    Random random = new Random();
-
-    private final List<Integer> list1 = new ArrayList<>();
-    private final List<Integer> list2 = new ArrayList<>();
-
-    public void addToList1() throws InterruptedException {
-        Thread.sleep(1);
-        synchronized (list1) {
-            list1.add(random.nextInt(100));
-        }
-    }
-
-    public void addToList2() throws InterruptedException {
-        Thread.sleep(1);
-        synchronized (list2) {
-            list2.add(random.nextInt(100));
-        }
-    }
-
-    public void work() throws InterruptedException {
-        for (int i = 0; i < 1000; i++) {
-            addToList1();
-            addToList2();
-        }
-    }
-
-    public void main() throws InterruptedException {
-        long before = System.currentTimeMillis();
-
-        Thread newThread = new Thread(() -> {
+        Thread thread1 = new Thread(() -> {
             try {
-                work();
+                produce();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         });
-        newThread.start();
 
-        Thread newThread2 = new Thread(() -> {
+        Thread thread2 = new Thread(() -> {
             try {
-                work();
+                consumer();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         });
-        newThread2.start();
 
-        newThread.join();
-        newThread2.join();
-       // work();
+        thread1.start();
+        thread2.start();
 
-        long after = System.currentTimeMillis();
-        System.out.println("Program took " + (after - before) + " ms to run");
+        thread1.join();
+        thread2.join();
+    }
 
-        System.out.println("list1: " + list1.size());
-        System.out.println("list2: " + list2.size());
+    private static void produce() throws InterruptedException {
+        Random random = new Random();
 
+        while (true) {
+            blockingQueue.put(random.nextInt(100));
+        }
+    }
+
+    private static void consumer() throws InterruptedException {
+         while (true) {
+            Thread.sleep(1000);
+            System.out.println(blockingQueue.take());
+             System.out.println("Queue size is " + blockingQueue.size());
+        }
     }
 }
-

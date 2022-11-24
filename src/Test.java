@@ -1,47 +1,32 @@
 import java.util.Random;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class Test {
-    private static final BlockingQueue<Integer> blockingQueue = new ArrayBlockingQueue<>(10);
-
     public static void main(String[] args) throws InterruptedException {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Random random = new Random();
+                for (int i = 0; i < 1e9; i++) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        System.out.println("Thread was interrupted");
+                        break;
+                    }
 
-        Thread thread1 = new Thread(() -> {
-            try {
-                produce();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                    Math.sin(random.nextDouble());
+                }
             }
         });
 
-        Thread thread2 = new Thread(() -> {
-            try {
-                consumer();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
+        System.out.println("Starting thread");
+        thread.start();
+        Thread.sleep(1000);
+        thread.interrupt();
+        thread.join();
 
-        thread1.start();
-        thread2.start();
-
-        thread1.join();
-        thread2.join();
-    }
-
-    private static void produce() throws InterruptedException {
-        Random random = new Random();
-
-        while (true) {
-            blockingQueue.put(random.nextInt(100));
-        }
-    }
-
-    private static void consumer() throws InterruptedException {
-         while (true) {
-            Thread.sleep(1000);
-            System.out.println(blockingQueue.take());
-             System.out.println("Queue size is " + blockingQueue.size());
-        }
+        System.out.println("Thread has finished");
     }
 }
